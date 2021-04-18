@@ -3,6 +3,9 @@
 #define meshmodel_H_
 
 #include "AGLM.h"
+#include <fstream>
+#include <sstream>
+#include <iostream>
 
 namespace agl {
    class Mesh
@@ -38,6 +41,14 @@ namespace agl {
       // face indices in this model
       unsigned int* indices() const;
 
+   private:
+       int vertices; // no. of vertices
+       int faces; // no. of faces in the element
+       float* vertex_array = NULL; // array of vertices
+       float* normal_array = NULL; // array of normals
+       unsigned int* index_array = NULL; // array of indices
+       glm::vec3 min_bound; // minimum boundary of bounding box
+       glm::vec3 max_bound; // maximum boundary of bounding box
    };
 }
 

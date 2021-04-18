@@ -19,6 +19,19 @@ Mesh theModel;
 int theCurrentModel = 0;
 vector<string> theModelNames;
 
+mat4 transformation(1.0); // initialize to identity
+mat4 projection = perspective(radians(200.0f), 1.0f, 0.1f, 10.0f);
+mat4 camera;
+mat4 mvp, mv;
+mat3 nmv;
+
+double xpos, ypos;
+float change_x, change_y;
+
+float Dist = 1.0f;
+float Azimuth = 0.0f;
+float Elevation = 0.0f;
+
 // OpenGL IDs
 GLuint theVboPosId;
 GLuint theVboNormalId;
@@ -79,25 +92,50 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-   double xpos, ypos;
-   glfwGetCursorPos(window, &xpos, &ypos);
+    float x, y, z;
 
-   // TODO: Camera controls
+    int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+    if (state == GLFW_PRESS)
+    {
+        glfwGetCursorPos(window, &xpos, &ypos);
 
-   int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-   if (state == GLFW_PRESS)
-   {
-       int keyPress = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
-       if (keyPress == GLFW_PRESS) {}
-   }
-   else if (state == GLFW_RELEASE)
-   {
-   }
+        int keyPress = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
+        if (keyPress == GLFW_PRESS) {
+            Dist = 0.01 * change_x + 0.01 * change_y;
+            if (Dist == 0.0f) Dist = 1.0f;
+            if (Dist < -5.0f) Dist = -5.0f;
+            if (Dist > 5.0f) Dist = 5.0f;
+        }
+    }
+    else if (state == GLFW_RELEASE)
+    {
+        x = Dist * sin(radians(Azimuth)) * cos(radians(Elevation));
+        y = Dist * sin(radians(Elevation));
+        z = Dist * cos(radians(Azimuth)) * cos(radians(Elevation));
+
+        camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
+        mvp = projection * camera * transformation;
+        mv = camera * transformation;
+        nmv = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
+    }
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
    // TODO: Camera controls
+
+    double old_xpos = xpos;
+    double old_ypos = ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+
+    if (ypos > radians(90.0)) ypos = radians(90.0);
+    if (ypos < radians(-90.0)) ypos = radians(-90.0);
+
+    change_x = xpos - old_xpos;
+    change_y = ypos - old_ypos;
+
+    Azimuth += 0.01 * change_x;
+    Elevation += 0.01 * change_y;
 }
 
 static void PrintShaderErrors(GLuint id, const std::string label)
@@ -247,10 +285,26 @@ int main(int argc, char** argv)
    GLuint shaderId = LoadShader("../shaders/phong.vs", "../shaders/phong.fs");
    glUseProgram(shaderId);
 
+   GLuint mvpId = glGetUniformLocation(shaderId, "uMVP");
+   GLuint mvId = glGetUniformLocation(shaderId, "uMV");
+   GLuint nmvId = glGetUniformLocation(shaderId, "uNMV");
+
+   glUniform3f(glGetUniformLocation(shaderId, "uMaterial.Ks"), 1.0, 1.0, 1.0); 
+   glUniform3f(glGetUniformLocation(shaderId, "uMaterial.Kd"), 0.4, 0.6, 1.0); 
+   glUniform3f(glGetUniformLocation(shaderId, "uMaterial.Ka"), 0.1, 0.1, 0.1); 
+   glUniform1f(glGetUniformLocation(shaderId, "uMaterial.shininess"), 80.0); 
+   glUniform3f(glGetUniformLocation(shaderId, "uLight.position"), 100.0, 100.0, 100.0); 
+   glUniform3f(glGetUniformLocation(shaderId, "uLight.color"), 1.0, 1.0, 1.0);
+
    // Loop until the user closes the window 
    while (!glfwWindowShouldClose(window))
    {
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the buffers
+
+      // Update transform
+      glUniformMatrix3fv(nmvId, 1, GL_FALSE, &nmv[0][0]);
+      glUniformMatrix4fv(mvId, 1, GL_FALSE, &mv[0][0]);
+      glUniformMatrix4fv(mvpId, 1, GL_FALSE, &mvp[0][0]);
 
       // Draw primitive
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, theElementbuffer);

@@ -11,6 +11,18 @@
 using namespace std;
 using namespace glm;
 
+mat4 transformation(1.0); // initialize to identity
+mat4 projection = perspective(radians(150.0f), 1.0f, 0.1f, 10.0f);
+mat4 camera;
+mat4 mvp;
+
+double xpos, ypos;
+float change_x, change_y;
+
+float Dist = 1.0f;
+float Azimuth = 0.0f;
+float Elevation = 0.0f;
+
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -34,25 +46,51 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-   double xpos, ypos;
-   glfwGetCursorPos(window, &xpos, &ypos);
-
    // TODO: CAmera controls
+   
+   float x, y, z;
 
    int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
    if (state == GLFW_PRESS)
    {
-       int keyPress = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
-       if (keyPress == GLFW_PRESS) {}
+        glfwGetCursorPos(window, &xpos, &ypos);
+        
+        int keyPress = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
+        if (keyPress == GLFW_PRESS) {
+            Dist = 0.01 * change_x + 0.01 * change_y;
+            if (Dist == 0.0f) Dist = 1.0f;
+            if (Dist < -5.0f) Dist = -5.0f;
+            if (Dist > 5.0f) Dist = 5.0f;
+        }
    }
    else if (state == GLFW_RELEASE)
    {
+       x = Dist * sin(radians(Azimuth)) * cos(radians(Elevation));
+       y = Dist * sin(radians(Elevation));
+       z = Dist * cos(radians(Azimuth)) * cos(radians(Elevation));
+
+       camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
+       mvp = projection * camera * transformation;
    }
+
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
    // TODO: CAmera controls
+    
+    double old_xpos = xpos;
+    double old_ypos = ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+
+    if (ypos > radians(90.0)) ypos = radians(90.0);
+    if (ypos < radians(-90.0)) ypos = radians(-90.0);
+
+    change_x = xpos - old_xpos;
+    change_y = ypos - old_ypos;
+
+    Azimuth += 0.01 * change_x;
+    Elevation += 0.01 * change_y;   
 }
 
 static void PrintShaderErrors(GLuint id, const std::string label)
@@ -134,12 +172,12 @@ int main(int argc, char** argv)
       1.0, -1.0, 0.5,
      -1.0, -1.0, 0.5,
       0.0, 1.0,  0.5,
-     -1.0, -1.0, 0.5,
       0.0, -1.0, -0.5,
-      0.0, 1.0, 0.5,
+      -1.0, -1.0, 0.5,
+      0.0, 1.0,  0.5,
       0.0, -1.0, -0.5,
       1.0, -1.0, 0.5,
-      0.0, 1.0, 0.5
+      0.0, 1.0,  0.5
    };
 
    const float normals[] =
@@ -147,20 +185,20 @@ int main(int argc, char** argv)
       0.0f, 0.0f, 1.0f,
       0.0f, 0.0f, 1.0f,
       0.0f, 0.0f, 1.0f,
-      1.0f, 0.0f, 0.0f,
-      1.0f, 0.0f, 0.0f,
-      1.0f, 0.0f, 0.0f,
-      0.0f, 1.0f, 0.0f,
-      0.0f, 1.0f, 0.0f,
-      0.0f, 1.0f, 0.0f
+      (2.0f / 3.0f), (-1.0f / 3.0f), (2.0f / 3.0f),
+      (2.0f / 3.0f), (-1.0f / 3.0f), (2.0f / 3.0f),
+      (2.0f / 3.0f), (-1.0f / 3.0f), (2.0f / 3.0f),
+      (-2.0f / 3.0f), (-1.0f / 3.0f), (2.0f / 3.0f),
+      (-2.0f / 3.0f), (-1.0f / 3.0f), (2.0f / 3.0f),
+      (-2.0f / 3.0f), (-1.0f / 3.0f), (2.0f / 3.0f)
    };
 
    const unsigned int indices[] =
    {
-      0, 1, 2
+      0, 1, 2, 3, 4, 5, 6, 7, 8
    };
 
-   int numTriangles = 1;
+   int numTriangles = 3;
 
    GLuint vboPosId;
    glGenBuffers(1, &vboPosId);
@@ -227,11 +265,16 @@ int main(int argc, char** argv)
 
    glUseProgram(shaderId);
 
+   GLuint matrixParam = glGetUniformLocation(shaderId, "mvp");
+
    // Loop until the user closes the window 
    while (!glfwWindowShouldClose(window))
    {
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the buffers
 
+      // Update transform
+      glUniformMatrix4fv(matrixParam, 1, GL_FALSE, &mvp[0][0]);
+     
       // Draw primitive
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
       glDrawElements(GL_TRIANGLES, numTriangles * 3, GL_UNSIGNED_INT, (void*)0);
