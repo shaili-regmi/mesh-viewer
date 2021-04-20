@@ -12,6 +12,10 @@ using namespace agl;
 
 Mesh::Mesh() 
 {
+    vertices = 0;
+    faces = 0;
+    min_bound = glm::vec3(0);
+    max_bound = glm::vec3(0);
 }
 
 Mesh::~Mesh()
@@ -45,10 +49,19 @@ bool Mesh::loadPLY(const std::string& filename)
     float max_x = 0;
     float max_y = 0;
     float max_z = 0;
+    int properties = 0;
 
     while (current_string.compare("end_header") != 0)
     {
         file >> current_string;
+        if (current_string.compare("property") == 0)
+        {
+            file >> current_string;
+            if (current_string.compare("float") == 0)
+            {
+                properties++;
+            }
+        }
         if (current_string.compare("element") == 0)
         {
             file >> current_string;
@@ -69,9 +82,24 @@ bool Mesh::loadPLY(const std::string& filename)
     normal_array = new float[vertices * 3];
     index_array = new unsigned int[faces * 3];
 
-    for (int i = 0; i < vertices; i+=3)
+    float current_value;
+
+    for (int i = 0; i < vertices; i++)
     {
-        file >> x >> y >> z >> nx >> ny >> nz;
+        vector <float> properties_list;
+        
+        for (int j = 0; j < properties; j++)
+        {
+            file >> current_value;
+            properties_list.push_back(current_value);
+        }
+        x = properties_list[0];
+        y = properties_list[1];
+        z = properties_list[2];
+        nx = properties_list[3];
+        ny = properties_list[4];
+        nz = properties_list[5];
+
         if (i == 0)
         {
             min_x = x;
@@ -89,26 +117,26 @@ bool Mesh::loadPLY(const std::string& filename)
         if (y > max_y) max_y = y;
         if (z > max_z) max_z = z;
 
-        vertex_array[i] = x;
-        vertex_array[i+1] = y; 
-        vertex_array[i+2] = z;
-        normal_array[i] = nx;
-        normal_array[i+1] = ny;
-        normal_array[i+2] = nz;
+        vertex_array[i*3+0] = x;
+        vertex_array[i*3+1] = y; 
+        vertex_array[i*3+2] = z;
+        normal_array[i*3+0] = nx;
+        normal_array[i*3+1] = ny;
+        normal_array[i*3+2] = nz;
     }
 
     min_bound = glm::vec3(min_x, min_y, min_z);
     max_bound = glm::vec3(max_x, max_y, max_z);
 
-    for (int i = 0; i < faces; i+=3)
+    for (int i = 0; i < faces; i++)
     {
         file >> current_string;
         if (current_string.compare("3") == 0)
         {
             file >> i0 >> i1 >> i2;
-            index_array[i] = i0;
-            index_array[i+1] = i1;
-            index_array[i+2] = i2;
+            index_array[i*3+0] = i0;
+            index_array[i*3+1] = i1;
+            index_array[i*3+2] = i2;
         }
     }
 
@@ -128,7 +156,7 @@ glm::vec3 Mesh::getMaxBounds() const
 
 int Mesh::numVertices() const
 {
-   return vertices;
+    return vertices;
 }
 
 int Mesh::numTriangles() const

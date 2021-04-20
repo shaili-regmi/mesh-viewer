@@ -1,5 +1,4 @@
 #version 400
-//per-pixel
 
 layout (location = 0) in vec3 vPos;
 layout (location = 1) in vec3 vNor;
@@ -41,7 +40,10 @@ void main()
 	vec4 ePos = uMV * vec4(vPos, 1.0);
 	vec3 eNormal = normalize( uNMV * vNor);
 	color = phongModel(ePos.xyz, eNormal);
+	//color = 0.5*(vNor + vec3(1));
+	//color = vec3(1,0,0);
 	
 	gl_Position = uMVP * vec4(vPos, 1.0);
+	//gl_Position = vec4(vPos, 1.0);
 }
 

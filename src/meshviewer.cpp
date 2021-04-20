@@ -20,7 +20,7 @@ int theCurrentModel = 0;
 vector<string> theModelNames;
 
 mat4 transformation(1.0); // initialize to identity
-mat4 projection = perspective(radians(200.0f), 1.0f, 0.1f, 10.0f);
+mat4 projection = perspective(radians(30.0f), 1.0f, 0.1f, 10.0f);
 mat4 camera;
 mat4 mvp, mv;
 mat3 nmv;
@@ -28,7 +28,7 @@ mat3 nmv;
 double xpos, ypos;
 float change_x, change_y;
 
-float Dist = 1.0f;
+float Dist = 10.0f;
 float Azimuth = 0.0f;
 float Elevation = 0.0f;
 
@@ -92,7 +92,7 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-    float x, y, z;
+    
 
     int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
     if (state == GLFW_PRESS)
@@ -109,14 +109,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
     }
     else if (state == GLFW_RELEASE)
     {
-        x = Dist * sin(radians(Azimuth)) * cos(radians(Elevation));
-        y = Dist * sin(radians(Elevation));
-        z = Dist * cos(radians(Azimuth)) * cos(radians(Elevation));
-
-        camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
-        mvp = projection * camera * transformation;
-        mv = camera * transformation;
-        nmv = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
+        
     }
 }
 
@@ -124,6 +117,9 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 {
    // TODO: Camera controls
 
+    int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+    if (state != GLFW_PRESS) return;
+    float x, y, z;
     double old_xpos = xpos;
     double old_ypos = ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
@@ -136,6 +132,15 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 
     Azimuth += 0.01 * change_x;
     Elevation += 0.01 * change_y;
+
+    x = Dist * sin(radians(Azimuth)) * cos(radians(Elevation));
+    y = Dist * sin(radians(Elevation));
+    z = Dist * cos(radians(Azimuth)) * cos(radians(Elevation));
+
+    camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
+    mvp = projection * camera * transformation;
+    mv = camera * transformation;
+    nmv = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
 }
 
 static void PrintShaderErrors(GLuint id, const std::string label)
@@ -295,6 +300,16 @@ int main(int argc, char** argv)
    glUniform1f(glGetUniformLocation(shaderId, "uMaterial.shininess"), 80.0); 
    glUniform3f(glGetUniformLocation(shaderId, "uLight.position"), 100.0, 100.0, 100.0); 
    glUniform3f(glGetUniformLocation(shaderId, "uLight.color"), 1.0, 1.0, 1.0);
+
+   float x, y, z;
+   x = Dist * sin(radians(Azimuth)) * cos(radians(Elevation));
+   y = Dist * sin(radians(Elevation));
+   z = Dist * cos(radians(Azimuth)) * cos(radians(Elevation));
+   
+   camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
+   mvp = projection * camera * transformation;
+   mv = camera * transformation;
+   nmv = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
 
    // Loop until the user closes the window 
    while (!glfwWindowShouldClose(window))
