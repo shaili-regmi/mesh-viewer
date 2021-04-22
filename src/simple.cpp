@@ -12,14 +12,14 @@ using namespace std;
 using namespace glm;
 
 mat4 transformation(1.0); // initialize to identity
-mat4 projection = perspective(radians(150.0f), 1.0f, 0.1f, 10.0f);
+mat4 projection = perspective(radians(30.0f), 1.0f, 0.1f, 10.0f);
 mat4 camera;
 mat4 mvp;
 
 double xpos, ypos;
 float change_x, change_y;
 
-float Dist = 1.0f;
+float Dist = 5.0f;
 float Azimuth = 0.0f;
 float Elevation = 0.0f;
 
@@ -46,51 +46,64 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-   // TODO: CAmera controls
-   
-   float x, y, z;
-
-   int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-   if (state == GLFW_PRESS)
-   {
+    int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+    float temp_Dist = 0.0f;
+    if (state == GLFW_PRESS)
+    {
         glfwGetCursorPos(window, &xpos, &ypos);
-        
-        int keyPress = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
+
+        int keyPress = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT); // Zooms in if you go towards the left and out if right.
         if (keyPress == GLFW_PRESS) {
-            Dist = 0.01 * change_x + 0.01 * change_y;
-            if (Dist == 0.0f) Dist = 1.0f;
-            if (Dist < -5.0f) Dist = -5.0f;
-            if (Dist > 5.0f) Dist = 5.0f;
+            if (xpos >= 0 && ypos >= 0)
+            {
+                temp_Dist += 0.1 * abs(change_x);
+            }
+            else
+            {
+                temp_Dist -= 0.1 * abs(change_y);
+            }
+
+            if (temp_Dist == 0.0f) temp_Dist = 1.0f;
+            if (temp_Dist < -10.0f) temp_Dist = -10.0f;
+            if (temp_Dist > 10.0f) temp_Dist = 10.0f;
+            Dist = temp_Dist;
         }
-   }
-   else if (state == GLFW_RELEASE)
-   {
-       x = Dist * sin(radians(Azimuth)) * cos(radians(Elevation));
-       y = Dist * sin(radians(Elevation));
-       z = Dist * cos(radians(Azimuth)) * cos(radians(Elevation));
+    }
+    else if (state == GLFW_RELEASE)
+    {
 
-       camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
-       mvp = projection * camera * transformation;
-   }
-
+    }
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
-   // TODO: CAmera controls
-    
+    // TODO: Camera controls
+
+    int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+    if (state != GLFW_PRESS) return;
+
+    float x, y, z;
     double old_xpos = xpos;
     double old_ypos = ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
+    if (xpos > radians(180.0)) xpos = radians(180.0);
+    if (xpos < radians(-180.0)) xpos = radians(-180.0);
     if (ypos > radians(90.0)) ypos = radians(90.0);
     if (ypos < radians(-90.0)) ypos = radians(-90.0);
 
     change_x = xpos - old_xpos;
     change_y = ypos - old_ypos;
 
-    Azimuth += 0.01 * change_x;
-    Elevation += 0.01 * change_y;   
+    Azimuth = 0.01 * change_x;
+    Elevation =  0.01 * change_y;
+
+    x = Dist * sin(Azimuth) * cos(Elevation);
+    y = Dist * sin(Elevation);
+    z = Dist * cos(Azimuth) * cos(Elevation);
+
+    camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
+    mvp = projection * camera * transformation;
 }
 
 static void PrintShaderErrors(GLuint id, const std::string label)
@@ -266,6 +279,14 @@ int main(int argc, char** argv)
    glUseProgram(shaderId);
 
    GLuint matrixParam = glGetUniformLocation(shaderId, "mvp");
+
+   float x, y, z;
+   x = Dist * sin(Azimuth) * cos(Elevation);
+   y = Dist * sin(Elevation);
+   z = Dist * cos(Azimuth) * cos(Elevation);
+
+   camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
+   mvp = projection * camera * transformation;
 
    // Loop until the user closes the window 
    while (!glfwWindowShouldClose(window))

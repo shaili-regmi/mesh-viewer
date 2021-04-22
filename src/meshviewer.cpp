@@ -28,7 +28,7 @@ mat3 nmv;
 double xpos, ypos;
 float change_x, change_y;
 
-float Dist = 10.0f;
+float Dist = 5.0f;
 float Azimuth = 0.0f;
 float Elevation = 0.0f;
 
@@ -92,19 +92,27 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-    
-
     int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+    float temp_Dist = 0.0f;
     if (state == GLFW_PRESS)
     {
         glfwGetCursorPos(window, &xpos, &ypos);
 
-        int keyPress = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
+        int keyPress = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT); // Zooms in if you go towards the left and out if right.
         if (keyPress == GLFW_PRESS) {
-            Dist = 0.01 * change_x + 0.01 * change_y;
-            if (Dist == 0.0f) Dist = 1.0f;
-            if (Dist < -5.0f) Dist = -5.0f;
-            if (Dist > 5.0f) Dist = 5.0f;
+            if (xpos >= 0 && ypos >= 0)
+            {
+                temp_Dist += 0.1 * abs(change_x);
+            }
+            else
+            {
+                temp_Dist -= 0.1 * abs(change_y);
+            }
+            
+            if (temp_Dist == 0.0f) temp_Dist = 1.0f;
+            if (temp_Dist < -10.0f) temp_Dist = -10.0f;
+            if (temp_Dist > 10.0f) temp_Dist = 10.0f;
+            Dist = temp_Dist;
         }
     }
     else if (state == GLFW_RELEASE)
@@ -119,25 +127,50 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 
     int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
     if (state != GLFW_PRESS) return;
+
     float x, y, z;
     double old_xpos = xpos;
     double old_ypos = ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
+    if (xpos > radians(180.0)) xpos = radians(180.0);
+    if (xpos < radians(-180.0)) xpos = radians(-180.0);
     if (ypos > radians(90.0)) ypos = radians(90.0);
     if (ypos < radians(-90.0)) ypos = radians(-90.0);
 
     change_x = xpos - old_xpos;
     change_y = ypos - old_ypos;
 
-    Azimuth += 0.01 * change_x;
-    Elevation += 0.01 * change_y;
+    Azimuth = 0.01 * change_x;
+    Elevation = 0.01 * change_y;
 
-    x = Dist * sin(radians(Azimuth)) * cos(radians(Elevation));
-    y = Dist * sin(radians(Elevation));
-    z = Dist * cos(radians(Azimuth)) * cos(radians(Elevation));
+    x = Dist * sin(Azimuth) * cos(Elevation);
+    y = Dist * sin(Elevation);
+    z = Dist * cos(Azimuth) * cos(Elevation);
+    
+    vec3 min_bound = theModel.getMinBounds();
+    vec3 max_bound = theModel.getMaxBounds();
+    vec3 midpoint = 0.5f * (min_bound + max_bound);
+    float angle = acos(dot(normalize(min_bound), normalize(max_bound)));
+    if (angle > radians(50.f)) angle = radians(50.0f);
+    if (angle < radians(-50.f)) angle = radians(-50.0f);
+    camera = lookAt(vec3(x, y, z), midpoint, vec3(0, 1, 0));
+    projection = perspective(angle, 1.0f, 0.1f, 10.0f);
+    //projection = perspective(radians(30.0f), 1.0f, length(min_bound), length(max_bound));
+    /*
+    vec3 diagonal = max_bound - min_bound;
+    float diagonal_length = length(diagonal);
+    float diff = diagonal_length - pow(3, 0.5); // to check if model is bigger than a ~400X400 square
+    float scale = 0.0f;
 
-    camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
+    if (diff > 0) scale = -diff;
+    if (diff < 0) scale = diff;
+
+    transformation = mat4(scale, 0.0, 0.0, 0.0,
+                          0.0, scale, 0.0, 0.0,
+                          0.0, 0.0, scale, 0.0,
+                          0.0, 0.0, 0.0, 1.0);
+                          */
     mvp = projection * camera * transformation;
     mv = camera * transformation;
     nmv = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
@@ -287,6 +320,7 @@ int main(int argc, char** argv)
    LoadModels("../models/");
    LoadModel(0);
 
+   //GLuint shaderId = LoadShader("../shaders/phong.vs", "../shaders/phong.fs");
    GLuint shaderId = LoadShader("../shaders/phong.vs", "../shaders/phong.fs");
    glUseProgram(shaderId);
 
@@ -302,11 +336,36 @@ int main(int argc, char** argv)
    glUniform3f(glGetUniformLocation(shaderId, "uLight.color"), 1.0, 1.0, 1.0);
 
    float x, y, z;
-   x = Dist * sin(radians(Azimuth)) * cos(radians(Elevation));
-   y = Dist * sin(radians(Elevation));
-   z = Dist * cos(radians(Azimuth)) * cos(radians(Elevation));
+   x = Dist * sin(Azimuth) * cos(Elevation);
+   y = Dist * sin(Elevation);
+   z = Dist * cos(Azimuth) * cos(Elevation);
    
-   camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
+   //camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
+
+   vec3 min_bound = theModel.getMinBounds();
+   vec3 max_bound = theModel.getMaxBounds();
+   vec3 midpoint = 0.5f * (min_bound + max_bound);
+   float angle = acos(dot(normalize(min_bound), normalize(max_bound)));
+   if (angle > radians(50.f)) angle = radians(50.0f);
+   if (angle < radians(-50.f)) angle = radians(-50.0f);
+   camera = lookAt(vec3(x, y, z), midpoint, vec3(0, 1, 0));
+   projection = perspective(angle, 1.0f, 0.1f, 10.0f);
+   //glViewport(min_bound.x, min_bound.y, max_bound.x, max_bound.y);
+   /*
+   vec3 min_bound = theModel.getMinBounds();
+   vec3 max_bound = theModel.getMaxBounds();
+   vec3 diagonal = max_bound - min_bound;
+   float diff = length(diagonal) - pow(3, 0.5); // to check if model is bigger than screen
+   float scale = 0.0f;
+
+   if (diff > 0) scale = -diff;
+   if (diff < 0) scale = diff;
+
+   transformation = mat4(scale, 0.0, 0.0, 0.0,
+       0.0, scale, 0.0, 0.0,
+       0.0, 0.0, scale, 0.0,
+       0.0, 0.0, 0.0, 1.0);
+       */
    mvp = projection * camera * transformation;
    mv = camera * transformation;
    nmv = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));

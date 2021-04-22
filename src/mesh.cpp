@@ -100,6 +100,8 @@ bool Mesh::loadPLY(const std::string& filename)
         ny = properties_list[4];
         nz = properties_list[5];
 
+        properties_list.clear();
+
         if (i == 0)
         {
             min_x = x;
