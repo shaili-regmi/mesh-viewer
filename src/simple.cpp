@@ -1,5 +1,6 @@
 // Bryn Mawr College, alinen, 2020
-//
+// Shaili Regmi cs312 - Assignment 4
+// NOTE: Refer to readme for details and notes
 
 #include "AGL.h"
 #include "AGLM.h"

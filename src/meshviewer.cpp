@@ -1,5 +1,6 @@
 // Bryn Mawr College, alinen, 2020
-//
+// Shaili Regmi cs312 - Assignment 4
+// NOTE: Refer to readme for details and notes
 
 #include "AGL.h"
 #include "AGLM.h"
@@ -9,6 +10,7 @@
 #include <vector>
 #include "mesh.h"
 #include "osutils.h"
+#include <glm/gtx/string_cast.hpp>
 
 using namespace std;
 using namespace glm;
@@ -148,29 +150,21 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
     y = Dist * sin(Elevation);
     z = Dist * cos(Azimuth) * cos(Elevation);
     
+    // Scaling and Translating each model to fit the screen
     vec3 min_bound = theModel.getMinBounds();
     vec3 max_bound = theModel.getMaxBounds();
+    vec3 max_dimension_vec = max_bound - min_bound;
+    float max_dimension = max_dimension_vec.x;
+    if (max_dimension_vec.y > max_dimension) max_dimension = max_dimension_vec.y;
+    if (max_dimension_vec.z > max_dimension) max_dimension = max_dimension_vec.z;
     vec3 midpoint = 0.5f * (min_bound + max_bound);
-    float angle = acos(dot(normalize(min_bound), normalize(max_bound)));
-    if (angle > radians(50.f)) angle = radians(50.0f);
-    if (angle < radians(-50.f)) angle = radians(-50.0f);
-    camera = lookAt(vec3(x, y, z), midpoint, vec3(0, 1, 0));
-    projection = perspective(angle, 1.0f, 0.1f, 10.0f);
-    //projection = perspective(radians(30.0f), 1.0f, length(min_bound), length(max_bound));
-    /*
-    vec3 diagonal = max_bound - min_bound;
-    float diagonal_length = length(diagonal);
-    float diff = diagonal_length - pow(3, 0.5); // to check if model is bigger than a ~400X400 square
-    float scale = 0.0f;
 
-    if (diff > 0) scale = -diff;
-    if (diff < 0) scale = diff;
+    mat4 trans_matrix = translate(mat4(1.0f), -midpoint);
+    mat4 scale_matrix = scale(mat4(1.0), vec3((1.0f / max_dimension), (1.0f / max_dimension), (1.0f / max_dimension)));
+    transformation = scale_matrix * trans_matrix;
+    
+    camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
 
-    transformation = mat4(scale, 0.0, 0.0, 0.0,
-                          0.0, scale, 0.0, 0.0,
-                          0.0, 0.0, scale, 0.0,
-                          0.0, 0.0, 0.0, 1.0);
-                          */
     mvp = projection * camera * transformation;
     mv = camera * transformation;
     nmv = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
@@ -339,33 +333,22 @@ int main(int argc, char** argv)
    x = Dist * sin(Azimuth) * cos(Elevation);
    y = Dist * sin(Elevation);
    z = Dist * cos(Azimuth) * cos(Elevation);
-   
-   //camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
 
+   // Scaling and Translating each model to fit the screen
    vec3 min_bound = theModel.getMinBounds();
    vec3 max_bound = theModel.getMaxBounds();
+   vec3 max_dimension_vec = max_bound - min_bound;
+   float max_dimension = max_dimension_vec.x;
+   if (max_dimension_vec.y > max_dimension) max_dimension = max_dimension_vec.y;
+   if (max_dimension_vec.z > max_dimension) max_dimension = max_dimension_vec.z;
    vec3 midpoint = 0.5f * (min_bound + max_bound);
-   float angle = acos(dot(normalize(min_bound), normalize(max_bound)));
-   if (angle > radians(50.f)) angle = radians(50.0f);
-   if (angle < radians(-50.f)) angle = radians(-50.0f);
-   camera = lookAt(vec3(x, y, z), midpoint, vec3(0, 1, 0));
-   projection = perspective(angle, 1.0f, 0.1f, 10.0f);
-   //glViewport(min_bound.x, min_bound.y, max_bound.x, max_bound.y);
-   /*
-   vec3 min_bound = theModel.getMinBounds();
-   vec3 max_bound = theModel.getMaxBounds();
-   vec3 diagonal = max_bound - min_bound;
-   float diff = length(diagonal) - pow(3, 0.5); // to check if model is bigger than screen
-   float scale = 0.0f;
 
-   if (diff > 0) scale = -diff;
-   if (diff < 0) scale = diff;
-
-   transformation = mat4(scale, 0.0, 0.0, 0.0,
-       0.0, scale, 0.0, 0.0,
-       0.0, 0.0, scale, 0.0,
-       0.0, 0.0, 0.0, 1.0);
-       */
+   mat4 trans_matrix = translate(mat4(1.0f), -midpoint);
+   mat4 scale_matrix = scale(mat4(1.0), vec3((1.0f / max_dimension), (1.0f / max_dimension), (1.0f / max_dimension)));
+   transformation = scale_matrix * trans_matrix;
+   
+   camera = lookAt(vec3(x, y, z), vec3(0), vec3(0, 1, 0));
+   
    mvp = projection * camera * transformation;
    mv = camera * transformation;
    nmv = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));

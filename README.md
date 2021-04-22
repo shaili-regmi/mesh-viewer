@@ -48,6 +48,9 @@ mesh-viewer/build $ ../bin/mesh-viewer
 ## Perspective Projection and Camera Controls/Rotations
 
 
+*NOTE: Rotations have been clamped (Azimuth -180 to 180 and Elevation -90 to 90)*
+
+
 ![pers_cam](https://github.com/shaili-regmi/mesh-viewer/blob/main/pers_view%20and%20camera%20control.png)
 
 
@@ -58,6 +61,8 @@ mesh-viewer/build $ ../bin/mesh-viewer
 
 *Cursor position towards the left - zoom in*
 
+*For maximum effect, also change cursor position from top to bottom*
+
 
 ![zoom](https://github.com/shaili-regmi/mesh-viewer/blob/main/zoom.png)
 
@@ -66,6 +71,8 @@ mesh-viewer/build $ ../bin/mesh-viewer
 
 
 *Implemented Mesh class that is capable of loading PLY files. Examples are unlit shaders:*
+
+*NOTE: Each model will be scaled and translated to fit the screen, but you may need to left-click when it first loads for this transformation to occur and to be able to see the model or center it.*
 
 
 ![unlit1](https://github.com/shaili-regmi/mesh-viewer/blob/main/unlit1.png)
