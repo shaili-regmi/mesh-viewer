@@ -41,3 +41,57 @@ mesh-viewer/build $ ../bin/mesh-viewer
 
 # TODO: Screenshots and writeup
 
+
+## Required Features Implemented:
+
+
+*Perspective Projection and Camera Controls/Rotations*
+
+
+![pers_cam](https://github.com/shaili-regmi/mesh-viewer/blob/main/pers_view%20and%20camera%20control.png)
+
+
+*Zoom in and out with Shift*
+
+
+# Cursor position towards the right - zoom out
+
+
+# Cursor position towards the left - zoom in
+
+
+![zoom](https://github.com/shaili-regmi/mesh-viewer/blob/main/zoom.png)
+
+
+*Mesh Viewer*
+
+
+# Implemented Mesh class that is capable of loading PLY files. Examples are unlit shaders:
+
+
+![unlit1](https://github.com/shaili-regmi/mesh-viewer/blob/main/unlit1.png)
+
+
+![unlit2](https://github.com/shaili-regmi/mesh-viewer/blob/main/unlit2.png)
+
+
+*Phong shading*
+
+
+![phong](https://github.com/shaili-regmi/mesh-viewer/blob/main/phong.png)
+
+
+*Unique Feature*
+
+
+# Per-pixel lighting
+
+
+![vertex vs pixel1](https://github.com/shaili-regmi/mesh-viewer/blob/main/Per-vertex%20vs%20Per-pixel.png)
+
+
+![vertex vs pixel2](https://github.com/shaili-regmi/mesh-viewer/blob/main/Per-vertex%20vs%20Per-pixel%202.png)
+
+
+![vertex vs pixel3](https://github.com/shaili-regmi/mesh-viewer/blob/main/Per-vertex%20vs%20Per-pixel%203.png)
+
